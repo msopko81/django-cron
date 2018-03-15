@@ -1,10 +1,11 @@
 import traceback
 from datetime import timedelta
 
-from django.core.management.base import BaseCommand
 from django.conf import settings
+from django.core.management.base import BaseCommand
 from django_cron import CronJobManager, get_class, get_current_time
 from django_cron.models import CronJobLog
+
 try:
     from django.db import close_old_connections as close_connection
 except ImportError:

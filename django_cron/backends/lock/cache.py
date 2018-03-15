@@ -1,7 +1,7 @@
-from django_cron.backends.lock.base import DjangoCronJobLock
-from django.conf import settings
-
 import warnings
+
+from django.conf import settings
+from django_cron.backends.lock.base import DjangoCronJobLock
 
 try:
     from django.core.cache import caches
@@ -87,7 +87,8 @@ class CacheLock(DjangoCronJobLock):
 
     def get_running_lock_date(self):
         date = self.cache.get(self.lock_name)
-        if not timezone.is_aware(date):
+        # @TODO https://github.com/Tivix/django-cron/pull/130/files
+        if date and not timezone.is_aware(date):
             tz = timezone.get_current_timezone()
             date = timezone.make_aware(date, tz)
         return date
