@@ -154,7 +154,7 @@ class CronJobManager(object):
         cron_log.save()
 
     def make_log_msg(self, msg, *other_messages):
-        MAX_MESSAGE_LENGTH = 1000
+        MAX_MESSAGE_LENGTH = getattr(settings, 'DJANGO_CRON_MAX_MESSAGE_LENGTH', 1000)
         if not other_messages:
             # assume that msg is a single string
             return msg[-MAX_MESSAGE_LENGTH:]
