@@ -154,22 +154,7 @@ class CronJobManager(object):
         cron_log.save()
 
     def make_log_msg(self, msg, *other_messages):
-        MAX_MESSAGE_LENGTH = getattr(settings, 'DJANGO_CRON_MAX_MESSAGE_LENGTH', 1000)
-        if not other_messages:
-            # assume that msg is a single string
-            return msg[-MAX_MESSAGE_LENGTH:]
-        else:
-            if len(msg):
-                msg += "\n...\n"
-                NEXT_MESSAGE_OFFSET = MAX_MESSAGE_LENGTH - len(msg)
-            else:
-                NEXT_MESSAGE_OFFSET = MAX_MESSAGE_LENGTH
-
-            if NEXT_MESSAGE_OFFSET > 0:
-                msg += other_messages[0][-NEXT_MESSAGE_OFFSET:]
-                return self.make_log_msg(msg, *other_messages[1:])
-            else:
-                return self.make_log_msg(msg)
+        return '\n...\n'.join(other_messages)[-getattr(settings, 'DJANGO_CRON_MAX_MESSAGE_LENGTH', 1000):]
 
     def __enter__(self):
         from django_cron.models import CronJobLog
