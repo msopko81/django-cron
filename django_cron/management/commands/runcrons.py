@@ -1,3 +1,4 @@
+import threading
 import traceback
 from datetime import timedelta
 
@@ -45,12 +46,30 @@ class Command(BaseCommand):
             self.stdout.write('Make sure these are valid cron class names: %s\n%s' % (cron_class_names, error))
             return
 
+        threads = []
         for cron_class in crons_to_run:
-            run_cron_with_cache_check(
-                cron_class,
-                force=options['force'],
-                silent=options['silent']
-            )
+            if getattr(settings, 'DJANGO_CRON_MULTITHREADED', False):
+                # # run all cron jobs in parallel as thread
+
+                th = threading.Thread(
+                    target=run_cron_with_cache_check,
+                    kwargs={
+                        "cron_class": cron_class,
+                        "force": options['force'],
+                        "silent": options['silent']
+                    }
+                )
+                th.start()
+                threads.append(th)
+            else:
+                run_cron_with_cache_check(
+                    cron_class,
+                    force=options['force'],
+                    silent=options['silent']
+                )
+
+        for th in threads:
+            th.join()
 
         clear_old_log_entries()
         close_old_connections()
