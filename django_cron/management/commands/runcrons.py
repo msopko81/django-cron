@@ -1,5 +1,6 @@
-import threading
+import random
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
 from django.conf import settings
@@ -46,30 +47,18 @@ class Command(BaseCommand):
             self.stdout.write('Make sure these are valid cron class names: %s\n%s' % (cron_class_names, error))
             return
 
-        threads = []
-        for cron_class in crons_to_run:
-            if getattr(settings, 'DJANGO_CRON_MULTITHREADED', False):
-                # # run all cron jobs in parallel as thread
+        # Shuffling array limit possibility of the same cron running twice
+        random.shuffle(crons_to_run)
+        thread_count = getattr(settings, 'DJANGO_CRON_MULTITHREADED', 1)
+        cron_count = len(crons_to_run)
 
-                th = threading.Thread(
-                    target=run_cron_with_cache_check,
-                    kwargs={
-                        "cron_class": cron_class,
-                        "force": options['force'],
-                        "silent": options['silent']
-                    }
-                )
-                th.start()
-                threads.append(th)
-            else:
-                run_cron_with_cache_check(
-                    cron_class,
-                    force=options['force'],
-                    silent=options['silent']
-                )
-
-        for th in threads:
-            th.join()
+        with ThreadPoolExecutor(thread_count) as executor:
+            executor.map(
+                run_cron_with_cache_check,
+                crons_to_run,
+                [options['force']] * cron_count,
+                [options['silent']] * cron_count,
+            )
 
         clear_old_log_entries()
         close_old_connections()
